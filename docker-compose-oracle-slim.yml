@@ -1,0 +1,32 @@
+version: '3'
+services:
+  database:    
+    image: store/oracle/database-enterprise:12.2.0.1-slim
+    container_name: oracle
+    restart: on-failure
+    environment:
+      DB_SID: ORACLEDB
+      DB_PDB: ORACLEDB
+      DB_DOMAIN: oracle.leosamblas.com
+
+    volumes:
+      - /home/leosamblas/desenvolvimento/docker/volumes/oradata:/opt/oracle/oradata
+    ports:
+      - 1521:1521
+
+    networks:
+      - oracledb-slim-network
+
+networks: 
+   oracledb-slim-network:
+    driver: bridge
+
+### Trocar senha pelo terminal do container ###
+# source /home/oracle/.bashrc; sqlplus /nolog
+# connect sys as sysdba;
+# password: Oradoc_db1
+# alter user sys identified by developer;
+### Criar usuario ###
+# alter session set "_ORACLE_SCRIPT"=true;
+# create user leosamblas identified by developer;
+# GRANT ALL PRIVILEGES TO leosamblas;
