@@ -13,6 +13,7 @@ services:
       ME_CONFIG_MONGODB_PORT: 27017
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
       ME_CONFIG_MONGODB_ADMINPASSWORD: developer
+      ME_CONFIG_MONGODB_SERVER: mongo
     links:
       - mongo
     networks:
