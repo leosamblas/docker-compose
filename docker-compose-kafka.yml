@@ -1,31 +1,78 @@
+# Pre reqs
+# Create dirs for Kafka / ZK data.
+# mkdir -p /apps/zookeeper/data
+# mkdir -p /apps/zookeeper/logs
+# mkdir -p /apps/kafka/data
+
+# Make sure the user has the read and write permissions.
+# chown -R 1000:1000 /apps/zookeeper/data
+# chown -R 1000:1000 /apps/zookeeper/logs
+# chown -R 1000:1000 /apps/kafka/data
 version: '3'
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
     container_name: zookeeper
+    hostname: zookeeper
     restart: on-failure
+    ports:
+      - 2181:2181
     networks: 
       - broker-kafka
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
+    volumes: 
+      - /apps/zookeeper/data:/var/lib/zookeeper/data
+      - /apps/zookeeper/logs:/var/lib/zookeeper/log
 
   kafka:
-    image: confluentinc/cp-kafka:latest
+    image: confluentinc/cp-server:latest
     container_name: kafka
+    hostname: kafka
+    restart: on-failure
     networks: 
       - broker-kafka
     depends_on:
       - zookeeper
     ports:
-      - 9092:9092
+      - 9093:9093
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:9092,OUTSIDE://localhost:9093
+      KAFKA_LISTENERS: INSIDE://:9092,OUTSIDE://:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_CONFLUENT_LICENSE_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_BALANCER_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_CONFLUENT_SCHEMA_REGISTRY_URL: schema-registry:8081
+      CONFLUENT_METRICS_REPORTER_BOOTSTRAP_SERVERS: kafka:9092
+      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+      CONFLUENT_METRICS_ENABLE: 'true'
+      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+    volumes: 
+      - /apps/kafka/data:/var/lib/kafka/data
+
+  schema:
+    image: confluentinc/cp-schema-registry
+    container_name: schema-registry
+    hostname: schema-registry
+    restart: on-failure
+    depends_on:
+      - kafka
+    ports:
+      - 8081:8081
+    networks: 
+      - broker-kafka
+    environment:
+      SCHEMA_REGISTRY_HOST_NAME: schema-registry
+      SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
 
   kafdrop:
     image: obsidiandynamics/kafdrop:latest
@@ -38,7 +85,24 @@ services:
     ports:
       - 19000:9000
     environment:
-      KAFKA_BROKERCONNECT: kafka:29092
+      KAFKA_BROKERCONNECT: kafka:9092
+
+  magic:
+    image: digitsy/kafka-magic
+    container_name: kafka-magic
+    restart: on-failure
+    networks: 
+      - broker-kafka
+    ports:
+      - 19001:80
+    volumes:
+      - /apps/kafka-magic/config:/config
+    environment:
+      KMAGIC_ALLOW_TOPIC_DELETE: "true"
+      KMAGIC_ALLOW_SCHEMA_DELETE: "true"
+      KMAGIC_CONFIG_STORE_TYPE: "file"
+      KMAGIC_CONFIG_STORE_CONNECTION: "Data Source=/config/KafkaMagicConfig.db;"
+      KMAGIC_CONFIG_ENCRYPTION_KEY: "1xeGBvo1wDxynAuOYzJn"
 
 networks: 
   broker-kafka:
