@@ -1,9 +1,7 @@
-# Pre reqs
-# mkdir -p /apps/oracle/oradata
-# chown -R 54321:54321 /apps/oracle/oradata
-version: '3'
+version: "3"
+
 services:
-  database:    
+  database:
     image: container-registry.oracle.com/database/enterprise:21.3.0.0
     container_name: oracle
     restart: on-failure
@@ -11,10 +9,9 @@ services:
       ORACLE_SID: ORCLCDB
       ORACLE_PDB: ORCLPDB1
       ORACLE_PWD: developer
-      DB_DOMAIN: oracle.leosamblas.com
-
     volumes:
-      - /apps/oracle/oradata:/opt/oracle/oradata
+      - oracle-data:/opt/oracle/oradata
+      - oracle-backup:/opt/oracle/backup
     ports:
       - 1521:1521
       - 5500:5500
@@ -22,10 +19,13 @@ services:
     networks:
       - oracledb-network
 
-networks: 
-   oracledb-network:
+networks:
+  oracledb-network:
     driver: bridge
 
+volumes:
+  oracle-data:
+  oracle-backup:
 ### Trocar senha pelo terminal do container ###
 # source /home/oracle/.bashrc; sqlplus /nolog
 # connect sys as sysdba;
