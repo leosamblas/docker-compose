@@ -23,4 +23,7 @@ networks:
 
 volumes:
   oracle-data:
+    driver: local
+
   oracle-backup:
+    driver: local

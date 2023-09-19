@@ -1,7 +1,7 @@
-version: '3'
+version: "3"
 
 services:
-  postgres-compose:
+  postgres:
     image: postgres
     restart: on-failure
     container_name: postgresql
@@ -10,24 +10,15 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - /home/leosamblas/desenvolvimento/docker/volumes/postgresql:/var/lib/postgresql/data
-      
-    networks:
-      - postgres-compose-network
+      - postgresql-data:/var/lib/postgresql/data
 
-  pgadmin-compose:
-    image: dpage/pgadmin4
-    restart: on-failure
-    environment:
-      PGADMIN_DEFAULT_EMAIL: "leosamblas@gmail.com"
-      PGADMIN_DEFAULT_PASSWORD: "developer"
-    ports:
-      - 54217:80
-    depends_on:
-      - postgres-compose
     networks:
-      - postgres-compose-network
+      - postgres-network
 
-networks: 
-  postgres-compose-network:
+volumes:
+  postgresql-data:
+    driver: local
+
+networks:
+  postgres-network:
     driver: bridge

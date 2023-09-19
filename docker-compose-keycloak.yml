@@ -1,16 +1,16 @@
-version: '3'
+version: "3"
 
-services: 
+services:
   keycloak:
     container_name: keycloak
     restart: on-failure
     image: jboss/keycloak
-    ports: 
+    ports:
       - 8080:8080
-    environment:     
+    environment:
       KEYCLOAK_USER: leosamblas
       KEYCLOAK_PASSWORD: developer
-    
+
     networks:
       - keycloak-network
 

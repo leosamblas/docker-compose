@@ -1,27 +1,9 @@
-version: '3'
+version: "3"
 
 services:
-  mongo-express:
-    image: mongo-express
-    container_name: mongo-express
-    restart: on-failure
-    ports:
-      - 8081:8081
-    environment:
-      ME_CONFIG_BASICAUTH_USERNAME: developer
-      ME_CONFIG_BASICAUTH_PASSWORD: developer
-      ME_CONFIG_MONGODB_PORT: 27017
-      ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: developer
-      ME_CONFIG_MONGODB_SERVER: mongo
-    links:
-      - mongo
-    networks:
-      - mongo-compose-network
-
   mongo:
     image: mongo
-    container_name: mongodb
+    container_name: mongo
     restart: on-failure
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
@@ -29,10 +11,14 @@ services:
     ports:
       - 27017:27017
     volumes:
-      - /home/leosamblas/desenvolvimento/docker/volumes/mongodb:/data/db
+      - mongo-data:/data/db
     networks:
-      - mongo-compose-network
+      - mongo-network
 
 networks:
-  mongo-compose-network:
+  mongo-network:
     driver: bridge
+
+volumes:
+  mongo-data:
+    driver: local

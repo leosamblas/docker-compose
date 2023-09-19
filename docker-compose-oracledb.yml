@@ -25,7 +25,10 @@ networks:
 
 volumes:
   oracle-data:
+    driver: local
+
   oracle-backup:
+    driver: local
 ### Trocar senha pelo terminal do container ###
 # source /home/oracle/.bashrc; sqlplus /nolog
 # connect sys as sysdba;
