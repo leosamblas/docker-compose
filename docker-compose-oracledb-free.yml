@@ -16,6 +16,8 @@ services:
       - 1521:1521
     networks:
       - oracledb-network
+    mem_limit: 2048m
+    cpus: 4.0
 
 networks:
   oracledb-network:

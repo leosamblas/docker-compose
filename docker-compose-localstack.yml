@@ -6,8 +6,8 @@ services:
     image: localstack/localstack
     restart: on-failure
     ports:
-      - "127.0.0.1:4566:4566"            # LocalStack Gateway
-      - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+      - 4566:4566 # LocalStack Gateway
+      - 4510-4559:4510-4559 # external services port range
     environment:
       # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
       - DEBUG=${DEBUG:-0}
@@ -16,6 +16,8 @@ services:
       - localstack-data:/var/run/docker.sock
     networks:
       - localstack-network
+    mem_limit: 1024m
+    cpus: 1.0
 
 networks:
   localstack-network:

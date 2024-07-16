@@ -11,9 +11,10 @@ services:
       - 5432:5432
     volumes:
       - postgresql-data:/var/lib/postgresql/data
-
     networks:
       - postgres-network
+    mem_limit: 1024m
+    cpus: 1.0
 
 volumes:
   postgresql-data:

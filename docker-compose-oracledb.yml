@@ -15,9 +15,10 @@ services:
     ports:
       - 1521:1521
       - 5500:5500
-
     networks:
       - oracledb-network
+    mem_limit: 4096m
+    cpus: 4.0
 
 networks:
   oracledb-network:

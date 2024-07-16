@@ -1,0 +1,23 @@
+version: "3.8"
+
+services:
+  cloudbeaver:
+    image: dbeaver/cloudbeaver:latest
+    container_name: cloudbeaver
+    restart: on-failure
+    ports:
+      - 8978:8978
+    volumes:
+      - cloudbeaver:/opt/cloudbeaver/workspace
+    networks:
+      - cloudbeaver-network
+    mem_limit: 1024m
+    cpus: 1.0
+
+networks:
+  cloudbeaver-network:
+    driver: bridge
+
+volumes:
+  cloudbeaver:
+    driver: local
