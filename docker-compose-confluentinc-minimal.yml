@@ -1,10 +1,9 @@
-version: "3"
 services:
   broker:
     image: confluentinc/cp-kafka:7.5.0
     hostname: broker
     restart: on-failure
-    container_name: broker
+    container_name: kafka-service
     ports:
       - "9092:9092"
       - "9101:9101"
@@ -23,10 +22,19 @@ services:
       KAFKA_LISTENERS: "PLAINTEXT://broker:29092,CONTROLLER://broker:29093,PLAINTEXT_HOST://0.0.0.0:9092"
       KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
       KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
-      KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
       CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
-    mem_limit: 2048m
-    cpus: 2.0
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: 1.0
+        reservations:
+          memory: 512M
+          cpus: 0.5
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+      - kafka-secrets:/var/lib/kafka/secrets
+      - kafka-secrets:/etc/kafka/secrets
 
   control-center:
     image: confluentinc/cp-enterprise-control-center:7.5.0
@@ -44,5 +52,17 @@ services:
       CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
       CONFLUENT_METRICS_TOPIC_REPLICATION: 1
       PORT: 9021
-    mem_limit: 1024m
-    cpus: 1.0
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: 0.5
+        reservations:
+          memory: 256M
+          cpus: 0.25
+
+volumes:
+  kafka-data:
+    driver: local
+  kafka-secrets:
+    driver: local
