@@ -11,6 +11,7 @@ services:
       - 27017:27017
     volumes:
       - mongo-data:/data/db
+      - mongo-data:/data/configdb
     networks:
       - mongo-network
     deploy:

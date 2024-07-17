@@ -1,9 +1,8 @@
-version: "3"
-
 services:
   database:
     image: container-registry.oracle.com/database/enterprise:21.3.0.0
-    container_name: oracle
+    hostname: oracle
+    container_name: oracle-service
     restart: on-failure
     environment:
       ORACLE_SID: ORCLCDB
@@ -17,8 +16,14 @@ services:
       - 5500:5500
     networks:
       - oracledb-network
-    mem_limit: 4096m
-    cpus: 4.0
+    deploy:
+      resources:
+        limits:
+          memory: 4096M
+          cpus: 4.0
+        reservations:
+          memory: 1024M
+          cpus: 1.0
 
 networks:
   oracledb-network:

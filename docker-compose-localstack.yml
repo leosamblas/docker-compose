@@ -1,23 +1,27 @@
-version: "3.8"
-
 services:
   localstack:
-    container_name: localstack-main
     image: localstack/localstack
+    hostname: localstack
+    container_name: localstack-service    
     restart: on-failure
     ports:
-      - 4566:4566 # LocalStack Gateway
-      - 4510-4559:4510-4559 # external services port range
+      - 4566:4566
+      - 4510-4559:4510-4559
     environment:
-      # LocalStack configuration: https://docs.localstack.cloud/references/configuration/
       - DEBUG=${DEBUG:-0}
     volumes:
       - localstack-data:/var/lib/localstack
       - localstack-data:/var/run/docker.sock
     networks:
       - localstack-network
-    mem_limit: 1024m
-    cpus: 1.0
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+          cpus: 1.0
+        reservations:
+          memory: 512M
+          cpus: 0.5
 
 networks:
   localstack-network:
