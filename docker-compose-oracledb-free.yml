@@ -11,6 +11,7 @@ services:
     volumes:
       - oracle-data:/opt/oracle/oradata
       - oracle-backup:/opt/oracle/backup
+      - ./ext_data:/ext_data
     ports:
       - 1521:1521
     networks:
