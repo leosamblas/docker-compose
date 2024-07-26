@@ -3,7 +3,7 @@ services:
     image: mongo:latest
     hostname: mongo
     container_name: mongo-service
-    restart: on-failure
+    restart: always
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: developer

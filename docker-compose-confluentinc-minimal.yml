@@ -2,7 +2,7 @@ services:
   broker:
     image: confluentinc/cp-kafka:latest
     hostname: broker
-    restart: on-failure
+    restart: always
     container_name: kafka-service
     ports:
       - 9092:9092

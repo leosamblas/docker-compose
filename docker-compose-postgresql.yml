@@ -1,7 +1,7 @@
 services:
   postgres:
     image: postgres
-    restart: on-failure
+    restart: always
     container_name: postgresql-service
     hostname: postgresql
     environment:
