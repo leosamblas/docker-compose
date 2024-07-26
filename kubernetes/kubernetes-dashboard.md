@@ -12,7 +12,7 @@ Configure token
 
 # Create token:
 
-    $ kubectl -n kubernetes-dashboard create token dashboard-user
+    $ kubectl -n kubernetes-dashboard create token admin-user
 
 
 # To access Dashboard run with Proxy:
