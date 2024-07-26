@@ -1,6 +1,6 @@
 services:
   localstack:
-    image: localstack/localstack
+    image: localstack/localstack:stable
     hostname: localstack
     container_name: localstack-service    
     restart: on-failure
