@@ -1,22 +1,26 @@
-# Kubernetes Dashboard
-    helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+# Headlamp Dashboard (scripted install)
 
-# Deploy a Helm Release named "kubernetes-dashboard" using the kubernetes-dashboard chart
-    helm upgrade --install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard --create-namespace --namespace kubernetes-dashboard --set=metricsScraper.enabled=true
+Use the provided script to install Headlamp, create an admin ServiceAccount, generate an access token, and optionally open a local port-forward to the Headlamp UI.
 
-# Fix kubernetes-dashboard metrics
-    kubectl patch deployment metrics-server -n kube-system --type 'json' -p '[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--kubelet-insecure-tls"}]'
+    bash kubernetes/setup-k8s-dashboard.sh
 
-# Configure token
-    kubectl create serviceaccount admin-user -n kubernetes-dashboard
-#   
-    kubectl create clusterrolebinding admin-user --clusterrole=cluster-admin --serviceaccount=kubernetes-dashboard:admin-user
+This script will:
+- verify `kubectl` and `helm`
+- install or upgrade Headlamp via Helm
+- install Metrics Server if missing
+- create a `headlamp-admin` ServiceAccount with `cluster-admin`
+- generate a token and display access instructions
+- optionally open `http://localhost:8080`
 
-# Create token: 24h token expiration time
-    kubectl -n kubernetes-dashboard create token admin-user --duration=24h
+# Uninstall Headlamp
 
-# To access Dashboard run with Proxy:
-    kubectl -n kubernetes-dashboard port-forward svc/kubernetes-dashboard-kong-proxy 8443:443 &
+To remove the Headlamp installation and related resources, run:
 
-# Dashboard will be available at: 
-    https://localhost:8443
+    bash kubernetes/uninstall-headlamp.sh
+
+This script will:
+- stop any active Headlamp port-forwards
+- uninstall the Helm release
+- delete the Headlamp namespace
+- remove the admin ServiceAccount and ClusterRoleBinding
+- delete the Metrics Server resources installed by the script
