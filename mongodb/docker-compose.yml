@@ -1,6 +1,6 @@
 services:
   mongo:
-    image: mongo:latest
+    image: mongo:9.0.2
     hostname: mongo
     container_name: mongo-service
     restart: always
