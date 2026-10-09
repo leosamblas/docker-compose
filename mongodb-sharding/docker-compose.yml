@@ -1,0 +1,224 @@
+name: mongodb-sharding
+
+services:
+  # ---------------------------------------------------------------------------
+  # Config Server (armazena metadados e estado do cluster sharded)
+  # ---------------------------------------------------------------------------
+  cfgsvr01:
+    image: mongo:latest
+    hostname: cfgsvr01
+    container_name: mongo-cfgsvr01
+    restart: always
+    command: ["mongod", "--configsvr", "--replSet", "cfgrs", "--port", "27017", "--bind_ip_all"]
+    ports:
+      - "27020:27017"
+    volumes:
+      - cfgsvr01-data:/data/db
+    networks:
+      - mongo-sharding-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: 1.0
+        reservations:
+          memory: 256M
+          cpus: 0.5
+
+  # ---------------------------------------------------------------------------
+  # Shard 01 (primeiro nó de dados particionados)
+  # ---------------------------------------------------------------------------
+  shard01:
+    image: mongo:latest
+    hostname: shard01
+    container_name: mongo-shard01
+    restart: always
+    command: ["mongod", "--shardsvr", "--replSet", "shard01rs", "--port", "27017", "--bind_ip_all"]
+    ports:
+      - "27018:27017"
+    volumes:
+      - shard01-data:/data/db
+    networks:
+      - mongo-sharding-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: 1.0
+        reservations:
+          memory: 256M
+          cpus: 0.5
+
+  # ---------------------------------------------------------------------------
+  # Shard 02 (segundo nó de dados particionados)
+  # ---------------------------------------------------------------------------
+  shard02:
+    image: mongo:latest
+    hostname: shard02
+    container_name: mongo-shard02
+    restart: always
+    command: ["mongod", "--shardsvr", "--replSet", "shard02rs", "--port", "27017", "--bind_ip_all"]
+    ports:
+      - "27019:27017"
+    volumes:
+      - shard02-data:/data/db
+    networks:
+      - mongo-sharding-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: 1.0
+        reservations:
+          memory: 256M
+          cpus: 0.5
+
+  # ---------------------------------------------------------------------------
+  # Mongos Router (porta de entrada principal para as aplicações - porta 27017)
+  # ---------------------------------------------------------------------------
+  mongos:
+    image: mongo:latest
+    hostname: mongos
+    container_name: mongo-router
+    restart: always
+    command: ["mongos", "--configdb", "cfgrs/cfgsvr01:27017", "--port", "27017", "--bind_ip_all"]
+    ports:
+      - "27017:27017"
+    networks:
+      - mongo-sharding-network
+    depends_on:
+      - cfgsvr01
+      - shard01
+      - shard02
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: 1.0
+        reservations:
+          memory: 256M
+          cpus: 0.5
+
+  # ---------------------------------------------------------------------------
+  # Inicializador automático do cluster (executa uma única vez)
+  # ---------------------------------------------------------------------------
+  cluster-init:
+    image: mongo:latest
+    container_name: mongo-cluster-init
+    restart: "no"
+    networks:
+      - mongo-sharding-network
+    depends_on:
+      - cfgsvr01
+      - shard01
+      - shard02
+      - mongos
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        echo "=== [INIT] Aguardando servidores MongoDB iniciarem ==="
+        until mongosh --host cfgsvr01:27017 --eval "db.adminCommand('ping')" --quiet > /dev/null 2>&1; do
+          echo "Aguardando cfgsvr01..."
+          sleep 2
+        done
+
+        until mongosh --host shard01:27017 --eval "db.adminCommand('ping')" --quiet > /dev/null 2>&1; do
+          echo "Aguardando shard01..."
+          sleep 2
+        done
+
+        until mongosh --host shard02:27017 --eval "db.adminCommand('ping')" --quiet > /dev/null 2>&1; do
+          echo "Aguardando shard02..."
+          sleep 2
+        done
+
+        echo "=== [INIT] Inicializando Replica Set do Config Server ==="
+        mongosh --host cfgsvr01:27017 --eval '
+          try {
+            rs.status();
+          } catch(e) {
+            rs.initiate({
+              _id: "cfgrs",
+              configsvr: true,
+              members: [{ _id: 0, host: "cfgsvr01:27017" }]
+            });
+          }
+        '
+
+        echo "=== [INIT] Inicializando Replica Set do Shard 01 ==="
+        mongosh --host shard01:27017 --eval '
+          try {
+            rs.status();
+          } catch(e) {
+            rs.initiate({
+              _id: "shard01rs",
+              members: [{ _id: 0, host: "shard01:27017" }]
+            });
+          }
+        '
+
+        echo "=== [INIT] Inicializando Replica Set do Shard 02 ==="
+        mongosh --host shard02:27017 --eval '
+          try {
+            rs.status();
+          } catch(e) {
+            rs.initiate({
+              _id: "shard02rs",
+              members: [{ _id: 0, host: "shard02:27017" }]
+            });
+          }
+        '
+
+        echo "=== [INIT] Aguardando nós elegerem Primary ==="
+        until mongosh --host cfgsvr01:27017 --eval "db.hello().isWritablePrimary" --quiet 2>/dev/null | grep -q "true"; do
+          echo "Aguardando Primary no cfgsvr01..."
+          sleep 2
+        done
+
+        until mongosh --host shard01:27017 --eval "db.hello().isWritablePrimary" --quiet 2>/dev/null | grep -q "true"; do
+          echo "Aguardando Primary no shard01..."
+          sleep 2
+        done
+
+        until mongosh --host shard02:27017 --eval "db.hello().isWritablePrimary" --quiet 2>/dev/null | grep -q "true"; do
+          echo "Aguardando Primary no shard02..."
+          sleep 2
+        done
+
+        echo "=== [INIT] Aguardando mongos responder ==="
+        until mongosh --host mongos:27017 --eval "db.adminCommand('ping')" --quiet > /dev/null 2>&1; do
+          echo "Aguardando mongos..."
+          sleep 2
+        done
+
+        echo "=== [INIT] Adicionando Shards ao cluster via mongos ==="
+        mongosh --host mongos:27017 --eval '
+          try {
+            sh.addShard("shard01rs/shard01:27017");
+          } catch(e) {
+            print("Shard 01 aviso: " + e);
+          }
+          try {
+            sh.addShard("shard02rs/shard02:27017");
+          } catch(e) {
+            print("Shard 02 aviso: " + e);
+          }
+        '
+
+        echo "=== [INIT] Status do Sharding ==="
+        mongosh --host mongos:27017 --eval "sh.status()"
+
+        echo "=== [INIT] Cluster Sharded configurado com sucesso! ==="
+
+networks:
+  mongo-sharding-network:
+    driver: bridge
+
+volumes:
+  cfgsvr01-data:
+    driver: local
+  shard01-data:
+    driver: local
+  shard02-data:
+    driver: local
